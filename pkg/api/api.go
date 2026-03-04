@@ -1,6 +1,9 @@
 package api
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
 const DateFormat = "20060102"
 
@@ -14,6 +17,8 @@ func taskHandler(w http.ResponseWriter, r *http.Request) {
         UpdateTaskHandler(w, r)
     case http.MethodDelete:
         DeleteTaskHandler(w, r)
+    default:
+        writeError(w, fmt.Errorf("failed "), http.StatusMethodNotAllowed)
     }
 }
 

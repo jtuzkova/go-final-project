@@ -14,10 +14,10 @@ func checkDate(task *db.Task) error {
 	now = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	
 	if task.Date == "" {
-		task.Date = now.Format("20060102")
+		task.Date = now.Format(DateFormat)
 	}
 
-	t, err := time.Parse("20060102", task.Date)
+	t, err := time.Parse(DateFormat, task.Date)
 	if err != nil {
 		return fmt.Errorf("invalid data format: %s", task.Date)
 	}
@@ -32,7 +32,7 @@ func checkDate(task *db.Task) error {
 
 	if AfterNow(now, t) || t.Equal(now){
         if len(task.Repeat) == 0 {
-            task.Date = now.Format("20060102")
+            task.Date = now.Format(DateFormat)
         } else {
             task.Date = next
         }
@@ -40,13 +40,13 @@ func checkDate(task *db.Task) error {
 	return nil
 }
 
-func writeError(w http.ResponseWriter, err error) {
+func writeError(w http.ResponseWriter, err error, statusCode int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
 	resp := map[string]string{"error": err.Error()}
 	jsonResponse, _ := json.Marshal(resp)
 
-	w.WriteHeader(http.StatusInternalServerError)
+	w.WriteHeader(statusCode)
 	w.Write(jsonResponse)
 }
 
@@ -55,7 +55,7 @@ func writeJson(w http.ResponseWriter, data any) {
 
 	resp, err := json.Marshal(data)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -69,29 +69,29 @@ func AddTaskHandler(w http.ResponseWriter, req *http.Request) {
 
 	_, err := buf.ReadFrom(req.Body)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
+        writeError(w, fmt.Errorf("failed to read request body"), http.StatusBadRequest)
         return
     }
     if err = json.Unmarshal(buf.Bytes(), &task); err != nil {
-        writeError(w, err)
+        writeError(w, err, http.StatusBadRequest)
 		return
     }
 
 	if task.Title == "" {
 		myErr := "title is empty"
-		writeError(w, fmt.Errorf("%s", myErr))
+		writeError(w, fmt.Errorf("%s", myErr), http.StatusBadRequest)
 		return
 	}
 
 	if err := checkDate(&task); err != nil {
-		writeError(w, err)
+		writeError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	id, err := db.AddTask(&task)
 	if err != nil {
 		myErr := "database error"
-		writeError(w, fmt.Errorf("%s", myErr))
+		writeError(w, fmt.Errorf("%s", myErr), http.StatusInternalServerError)
 		return
 	}
 

@@ -30,14 +30,22 @@ func Init(dbFile string) error {
 	if err != nil {
         return fmt.Errorf("Ошибка открытия БД: %w", err)
     }
-    // defer dbF.Close()
 
 	if install {
 		_, err := dbF.Exec(schema)
+		dbF.Close()
 		if err != nil {
 			return fmt.Errorf("Ошибка создания таблицы или индекса: %w", err)
 		}
 	}
 	db = dbF
+	return nil
+}
+
+func Close() error {
+	if db != nil {
+		fmt.Println("close connection to bd")
+		return db.Close()
+	}
 	return nil
 }

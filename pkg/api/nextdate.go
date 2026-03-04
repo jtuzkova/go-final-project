@@ -13,7 +13,7 @@ func AfterNow(date, now time.Time) bool {
 }
 
 func NextDate(now time.Time, dstart string, repeat string) (string, error) {
-	date, err := time.Parse("20060102", dstart)
+	date, err := time.Parse(DateFormat, dstart)
 	if err != nil {
 		return "", fmt.Errorf("invalid data format: %s", dstart)
 	}
@@ -54,10 +54,14 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
         	break
     	}
 	}
-	return date.Format("20060102"), nil
+	return date.Format(DateFormat), nil
 }
 
 func NextDayHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeError(w, fmt.Errorf("method not allowed"), http.StatusMethodNotAllowed)
+		return
+	}
 	strNow := req.FormValue("now")
 	strDate := req.FormValue("date")
 	repeat := req.FormValue("repeat")
